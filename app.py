@@ -122,3 +122,4 @@ elif menu == "🩸 혈액형 궁합":
         with st.spinner("피 섞어보는 중..."):
             res = model.generate_content(f"{my_b}와 {your_b}의 혈액형 궁합을 할배 사투리로 말해줘.")
             st.write(res.text)
+
