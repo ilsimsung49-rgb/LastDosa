@@ -4,7 +4,7 @@ import random
 import datetime
 
 # 1. 도사님 설정 (에러 방지용 모델 자동 선택 로직)
-genai.configure(api_key="AIzaSyCLYFZyJJTUrGiV9e24Uud8o234Ic54RaI")
+genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 def get_dosa_model():
     """에러를 방지하기 위해 사용 가능한 모델을 자동으로 찾아 연결합니다."""
@@ -122,5 +122,6 @@ elif menu == "🩸 혈액형 궁합":
         with st.spinner("피 섞어보는 중..."):
             res = model.generate_content(f"{my_b}와 {your_b}의 혈액형 궁합을 할배 사투리로 말해줘.")
             st.write(res.text)
+
 
 
