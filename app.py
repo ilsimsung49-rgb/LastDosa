@@ -6,25 +6,25 @@ from datetime import date
 # 1. 페이지 설정 (최상단 고정)
 st.set_page_config(page_title="할배 도사 만능 상담소", page_icon="👴", layout="wide")
 
-# 2. 유료/무료 티어 통합 안정화 모델 설정
+# 2. AI 모델 설정 (에러 로그를 바탕으로 수정된 표준 모델명)
 try:
     if "GOOGLE_API_KEY" in st.secrets:
         genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-        # 가장 범용적이고 호출 성공률이 높은 표준 모델명입니다.
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # 'gemini-1.5-flash' 대신 더 안정적인 'gemini-pro'를 사용하거나 경로를 뺍니다.
+        model = genai.GenerativeModel('gemini-pro')
     else:
-        st.error("⚠️ API 키가 없구먼! Secrets 설정을 확인해주게.")
+        st.error("⚠️ API 키가 설정되지 않았구먼! Secrets 설정을 확인해주게.")
 except Exception as e:
-    st.error(f"⚠️ 시스템 연결 오류: {e}")
+    st.error(f"⚠️ 도사님 목소리 연결 실패: {e}")
 
-# 3. 78장 타로 덱 정의
+# 3. 78장 타로 카드 정의
 def get_tarot_deck():
     major = [f"{i}_Major" for i in range(22)]
     suits = ["Wands", "Cups", "Swords", "Pentacles"]
     ranks = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Page", "Knight", "Queen", "King"]
     return major + [f"{rank}_of_{suit}" for suit in suits for rank in ranks]
 
-# 4. 메뉴 및 상태 관리
+# 4. 메뉴 상태 관리
 if 'menu' not in st.session_state:
     st.session_state.menu = "메인"
 
@@ -32,84 +32,60 @@ if 'menu' not in st.session_state:
 if st.session_state.menu == "메인":
     st.markdown("<h1 style='text-align: center;'>👴 할배 도사 만능 상담소</h1>", unsafe_allow_html=True)
     st.write("---")
-    
     col1, col2, col3 = st.columns(3)
     col4, col5, _ = st.columns(3)
-
     with col1:
-        st.markdown("### 🔍 MBTI 족집게 판별")
-        if st.button("내 MBTI 맞혀보쇼", key="m1"): st.session_state.menu = "MBTI"; st.rerun()
+        if st.button("🔍 MBTI 족집게 판별", key="m1"): st.session_state.menu = "MBTI"; st.rerun()
     with col2:
-        st.markdown("### 📅 오늘의 운세")
-        if st.button("오늘의 기운 보기", key="m2"): st.session_state.menu = "오늘"; st.rerun()
+        if st.button("📅 오늘의 운세", key="m2"): st.session_state.menu = "오늘"; st.rerun()
     with col3:
-        st.markdown("### 📜 전체 사주풀이")
-        if st.button("평생 팔자 확인", key="m3"): st.session_state.menu = "사주"; st.rerun()
+        if st.button("📜 전체 사주풀이", key="m3"): st.session_state.menu = "사주"; st.rerun()
     with col4:
-        st.markdown("### 🐉 2026년 대운")
-        if st.button("내년 운세 보기", key="m4"): st.session_state.menu = "올해"; st.rerun()
+        if st.button("🐉 2026년 대운", key="m4"): st.session_state.menu = "올해"; st.rerun()
     with col5:
-        st.markdown("### 🃏 78장 타로")
-        if st.button("고민 상담하기", key="m5"): st.session_state.menu = "타로"; st.rerun()
+        if st.button("🃏 78장 타로", key="m5"): st.session_state.menu = "타로"; st.rerun()
 
 # --- [상담방 내부] ---
 else:
-    if st.button("⬅️ 메인으로 돌아가기"): st.session_state.menu = "메인"; st.rerun()
+    if st.button("⬅️ 메인으로"): st.session_state.menu = "메인"; st.rerun()
     st.write("---")
 
-    # 1. MBTI 판별
     if st.session_state.menu == "MBTI":
-        st.subheader("📍 할배 도사의 MBTI 독심술")
-        st.info("👴: '자네 성격이나 평소 습관을 아무렇게나 적어보게. 도사가 딱 맞혀줄 테니!'")
-        u_in = st.text_area("도사님께 건낼 말", height=150, key="m_txt")
-        if st.button("제 MBTI는 뭔가요?"):
-            if u_in:
-                with st.spinner("살펴보는 중..."):
-                    res = model.generate_content(f"너는 용한 할배 도사야. 글: '{u_in}'. MBTI를 판별하고 노인 말투로 설명해줘.")
-                    st.write(res.text)
+        st.subheader("📍 MBTI 독심술")
+        u_in = st.text_area("성격이나 습관을 적어보게.", key="m_txt")
+        if st.button("MBTI 확인"):
+            res = model.generate_content(f"너는 할배 도사야. 이 글을 분석해서 MBTI를 맞히고 노인 말투로 설명해줘: {u_in}")
+            st.write(res.text)
 
-    # 2. 오늘의 운세 (1985 기본, 1900년부터 선택 가능)
     elif st.session_state.menu == "오늘":
         st.subheader("📍 오늘의 운세")
         n_in = st.text_input("이름", key="n_t")
-        b_in = st.date_input("생년월일", value=date(1985, 1, 1), min_value=date(1900, 1, 1), key="b_t")
+        b_in = st.date_input("생일", value=date(1985, 1, 1), min_value=date(1900, 1, 1), key="b_t")
         if st.button("오늘 점괘 보기"):
-            if n_in:
-                with st.spinner("기운을 살피는 중..."):
-                    card = random.choice(get_tarot_deck())
-                    res = model.generate_content(f"이름:{n_in}, 생일:{b_in}. 타로 {card}로 오늘 운세를 노인 말투로 알려줘.")
-                    st.write(res.text)
+            card = random.choice(get_tarot_deck())
+            res = model.generate_content(f"이름:{n_in}, 생일:{b_in}. 타로 {card}로 오늘 운세를 노인 말투로 알려줘.")
+            st.write(res.text)
 
-    # 3. 전체 사주풀이 (평생 팔자)
     elif st.session_state.menu == "사주":
-        st.subheader("📍 평생 사주팔자 풀이")
+        st.subheader("📍 평생 사주풀이")
         n_in = st.text_input("성함", key="n_s")
-        b_in = st.date_input("생년월일 ", value=date(1985, 1, 1), min_value=date(1900, 1, 1), key="b_s")
-        t_in = st.text_input("태어난 시간", key="t_s")
-        if st.button("평생 운명 확인"):
-            if n_in:
-                with st.spinner("사주 단자를 보는 중..."):
-                    res = model.generate_content(f"이름:{n_in}, 생일:{b_in}, 시간:{t_in}. 평생 사주와 평생 운명을 노인 말투로 자세히 풀어줘.")
-                    st.write(res.text)
+        b_in = st.date_input("생년월일", value=date(1985, 1, 1), min_value=date(1900, 1, 1), key="b_s")
+        if st.button("팔자 확인"):
+            res = model.generate_content(f"이름:{n_in}, 생일:{b_in}. 평생 사주와 운명을 노인 말투로 자세히 풀어줘.")
+            st.write(res.text)
 
-    # 4. 2026년 대운 (올해 운세)
     elif st.session_state.menu == "올해":
-        st.subheader("📍 2026년 병오년 대운")
+        st.subheader("📍 2026년 대운")
         n_in = st.text_input("성함 ", key="n_y")
-        b_in = st.date_input("생년월일  ", value=date(1985, 1, 1), min_value=date(1900, 1, 1), key="b_y")
+        b_in = st.date_input("생년월일 ", value=date(1985, 1, 1), min_value=date(1900, 1, 1), key="b_y")
         if st.button("내년 총운 확인"):
-            if n_in:
-                with st.spinner("신년 운세 읽는 중..."):
-                    res = model.generate_content(f"이름:{n_in}, 생일:{b_in}. 2026년 재물, 건강, 애정운을 사주 기반 노인 말투로 알려줘.")
-                    st.write(res.text)
+            res = model.generate_content(f"이름:{n_in}, 생일:{b_in}. 2026년 운세를 노인 말투로 알려줘.")
+            st.write(res.text)
 
-    # 5. 타로 상담
     elif st.session_state.menu == "타로":
-        st.subheader("📍 78장 타로 심층 상담")
-        q_in = st.text_input("무엇이 궁금한가?", key="q_ta")
-        if st.button("카드 3장 뽑기"):
-            if q_in:
-                with st.spinner("카드를 섞는 중..."):
-                    cards = random.sample(get_tarot_deck(), 3)
-                    res = model.generate_content(f"질문:{q_in}, 카드:{cards}. 노인 말투로 타로 상담해줘.")
-                    st.write(res.text)
+        st.subheader("📍 78장 타로")
+        q_in = st.text_input("고민?", key="q_ta")
+        if st.button("카드 뽑기"):
+            cards = random.sample(get_tarot_deck(), 3)
+            res = model.generate_content(f"질문:{q_in}, 카드:{cards}. 노인 말투로 타로 상담해줘.")
+            st.write(res.text)
