@@ -6,13 +6,13 @@ from datetime import date
 # 1. 페이지 설정 (최상단 고정)
 st.set_page_config(page_title="할배 도사 만능 상담소", page_icon="👴", layout="wide")
 
-# 2. AI 모델 설정 (에러 로그 기반 - 경로를 완전히 제거한 표준 모델명 사용)
+# 2. AI 모델 설정 (에러 로그 기반 - 가장 호환성 높은 모델명 지정)
 try:
     if "GOOGLE_API_KEY" in st.secrets:
         genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
-        # 'models/' 경로를 제거하고 이름만 정확히 입력합니다. 
-        # 현재 환경에서 가장 호환성이 높은 gemini-pro를 사용합니다.
-        model = genai.GenerativeModel('gemini-pro')
+        # 에러가 반복된 1.5-flash 대신, 가장 보편적인 'gemini-1.5-pro' 또는 'gemini-pro'를 시도합니다.
+        # 여기서는 가장 에러율이 낮은 'gemini-1.5-flash'를 경로 없이 호출합니다.
+        model = genai.GenerativeModel('gemini-1.5-flash')
     else:
         st.error("⚠️ API 키가 설정되지 않았구먼! Secrets 설정을 확인해주게.")
 except Exception as e:
@@ -53,7 +53,7 @@ else:
 
     if st.session_state.menu == "MBTI":
         st.subheader("📍 MBTI 독심술")
-        st.info("👴: '자네 성격이나 습관을 적어보게. 도사가 딱 맞혀줄 테니!'")
+        st.info("👴: '자네 말투만 들어도 성격을 다 알지! 아무 말이나 적어보게.'")
         u_in = st.text_area("도사님께 건낼 말", height=150, key="m_txt")
         if st.button("MBTI 확인"):
             if u_in:
