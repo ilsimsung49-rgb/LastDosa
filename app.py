@@ -1,113 +1,27 @@
 import streamlit as st
-import requests
-import random
-from datetime import date
+import google.generativeai as genai
 
-# 1. 앱 기본 설정
-st.set_page_config(page_title="할배 도사 만능 상담소", page_icon="👴", layout="wide")
+st.title("🧪 할배 도사 시스템 정밀 진단")
 
-# 2. [완전 새 방식] 에러의 주범인 'v1beta'를 버리고 'v1' 정식 서버 주소를 사용합니다.
-def ask_ai_final(prompt):
-    api_key = st.secrets["GOOGLE_API_KEY"]
-    # 404 에러가 났던 v1beta 대신 'v1' 정식 주소를 사용하여 물리적으로 경로를 바꿨습니다.
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={api_key}"
-    
-    headers = {'Content-Type': 'application/json'}
-    payload = {
-        "contents": [{
-            "parts": [{
-                "text": f"너는 용한 할배 도사야. 구수한 전라도 사투리를 섞은 노인 말투로 답변해줘. {prompt}"
-            }]
-        }]
-    }
-    
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        # 만약 v1에서도 못 찾으면 구식 모델인 gemini-pro로 즉시 자동 우회합니다.
-        if response.status_code == 404:
-            url_backup = f"https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key={api_key}"
-            response = requests.post(url_backup, headers=headers, json=payload)
+try:
+    if "GOOGLE_API_KEY" in st.secrets:
+        genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+        
+        st.write("### 1. 연결 상태 확인")
+        st.success("✅ API 키 연결 성공!")
+
+        st.write("### 2. 사용 가능한 모델 목록 (이게 핵심입니다)")
+        # 사용자님의 키로 호출 가능한 모든 모델 목록을 가져옵니다.
+        models = [m.name for m in genai.list_models()]
+        
+        if models:
+            for m in models:
+                st.code(m)
+            st.info("💡 위 목록에 있는 이름 중 하나를 골라야 404 에러가 나지 않습니다.")
+        else:
+            st.warning("⚠️ 사용 가능한 모델이 하나도 발견되지 않았습니다.")
             
-        response.raise_for_status() 
-        return response.json()['candidates'][0]['content']['parts'][0]['text']
-    except Exception as e:
-        return f"👴: '에구구, 기운이 꼬였나 보구먼. 다시 한번 눌러보게! (알림: {e})'"
-
-# 3. 78장 타로 덱
-def create_tarot():
-    major = [f"{i}_Major" for i in range(22)]
-    suits = ["Wands", "Cups", "Swords", "Pentacles"]
-    ranks = ["Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Page", "Knight", "Queen", "King"]
-    return major + [f"{rank}_of_{suit}" for rank in ranks for suit in suits]
-
-# 4. 메뉴 시스템 (세션 관리)
-if 'page' not in st.session_state:
-    st.session_state.page = "HOME"
-
-# --- [메인 로비] ---
-if st.session_state.page == "HOME":
-    st.markdown("<h1 style='text-align: center;'>👴 할배 도사 만능 상담소</h1>", unsafe_allow_html=True)
-    st.write("---")
-    
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        if st.button("🔍 MBTI 판별", use_container_width=True): st.session_state.page = "MBTI"; st.rerun()
-    with col2:
-        if st.button("📅 오늘 운세", use_container_width=True): st.session_state.page = "TODAY"; st.rerun()
-    with col3:
-        if st.button("📜 사주풀이", use_container_width=True): st.session_state.page = "SAJU"; st.rerun()
-    with col4:
-        if st.button("🐉 2026 대운", use_container_width=True): st.session_state.page = "2026"; st.rerun()
-    with col5:
-        if st.button("🃏 78장 타로", use_container_width=True): st.session_state.page = "TAROT"; st.rerun()
-
-# --- [상담실 내부] ---
-else:
-    if st.button("⬅️ 처음으로 돌아가기"): st.session_state.page = "HOME"; st.rerun()
-    st.write("---")
-
-    if st.session_state.page == "MBTI":
-        st.subheader("📍 할배 도사의 MBTI 독심술")
-        text = st.text_area("성격이나 습관을 적어보게.", height=150)
-        if st.button("도사님 분석해주쇼"):
-            if text:
-                with st.spinner("살펴보는 중..."):
-                    st.write(ask_ai_final(f"MBTI를 맞히고 이유를 노인 말투로 설명해줘: {text}"))
-
-    elif st.session_state.page == "TODAY":
-        st.subheader("📍 오늘의 운세 실")
-        name = st.text_input("이름")
-        # 1958년생 어르신들도 바로 선택 가능하도록 기본값 고정
-        birth = st.date_input("생년월일", value=date(1958, 4, 7), min_value=date(1900, 1, 1))
-        if st.button("오늘 점괘 보기"):
-            if name:
-                with st.spinner("엽전 던지는 중..."):
-                    card = random.choice(create_tarot())
-                    st.write(ask_ai_final(f"이름:{name}, 생일:{birth}, 타로카드:{card}로 오늘 운세를 알려줘."))
-
-    elif st.session_state.page == "SAJU":
-        st.subheader("📍 평생 사주풀이 실")
-        name = st.text_input("성함")
-        birth = st.date_input("생일 입력", value=date(1958, 4, 7), min_value=date(1900, 1, 1))
-        if st.button("운명 확인"):
-            if name:
-                with st.spinner("단자 펼치는 중..."):
-                    st.write(ask_ai_final(f"이름:{name}, 생일:{birth}. 평생 사주를 자세히 풀어줘."))
-
-    elif st.session_state.page == "2026":
-        st.subheader("📍 2026년 대운 실")
-        name = st.text_input("이름 ")
-        birth = st.date_input("생년월일  ", value=date(1958, 4, 7), min_value=date(1900, 1, 1))
-        if st.button("내년 총운 확인"):
-            if name:
-                with st.spinner("새해 기운 읽는 중..."):
-                    st.write(ask_ai_final(f"이름:{name}, 생일:{birth}. 2026년 운세를 알려줘."))
-
-    elif st.session_state.page == "TAROT":
-        st.subheader("📍 78장 타로 상담실")
-        quest = st.text_input("고민이 무엇인가?")
-        if st.button("카드 뽑기"):
-            if quest:
-                with st.spinner("카드 섞는 중..."):
-                    cards = random.sample(create_tarot(), 3)
-                    st.write(ask_ai_final(f"질문:{quest}, 카드:{cards}로 타로 상담해줘."))
+    else:
+        st.error("❌ Secrets에 GOOGLE_API_KEY가 없습니다.")
+except Exception as e:
+    st.error(f"❌ 진단 중 오류 발생: {e}")
