@@ -3,16 +3,16 @@ import google.generativeai as genai
 import random
 from datetime import date
 
-# 1. 페이지 설정 (최상단 고정 필수)
+# 1. 페이지 설정 (최상단 고정)
 st.set_page_config(page_title="할배 도사 만능 상담소", page_icon="👴", layout="wide")
 
-# 2. AI 모델 설정 (에러 로그 분석 결과: 군더더기 없는 표준 명칭 사용)
+# 2. AI 모델 설정 (에러 로그 분석 결과: 경로를 제거한 가장 단순한 이름 사용)
 try:
     if "GOOGLE_API_KEY" in st.secrets:
         genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
         # 'models/' 경로를 넣으면 404 에러가 납니다.
-        # 유료 티어에서 가장 호출 성공률이 높은 표준 이름만 사용합니다.
-        model = genai.GenerativeModel('gemini-1.5-pro')
+        # 유료 티어에서 가장 안정적인 gemini-pro 명칭만 사용합니다.
+        model = genai.GenerativeModel('gemini-pro')
     else:
         st.error("⚠️ API 키가 설정되지 않았구먼! Secrets 설정을 확인해주게.")
 except Exception as e:
